@@ -1,0 +1,11 @@
+TARGET_FQDN: stg.scaru.co.jp
+TARGET_DOMAIN: "{{ TARGET_FQDN | regex_replace('^stgapi.|^stgbk.|^stg.|^api.|^bk.|','') }}"
+
+root_etc_httpd_confd: /etc/httpd/conf.d
+root_usr_local_bin: /usr/local/bin
+root_tmp: /tmp
+download_url: https://dl.eff.org/certbot-auto
+csum: 
+DOCUMENT_API_ROOT: /home/scaruadmin/source/api.scaru/control
+DOCUMENT_BK_ROOT: /home/scaruadmin/source/bk.scaru/control
+DOCUMENT_FRONT_ROOT: /home/scaruadmin/source/scaru/control

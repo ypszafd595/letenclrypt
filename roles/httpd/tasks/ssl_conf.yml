@@ -1,0 +1,95 @@
+---
+- debug:
+    msg: debug variables {{ download_url }} {{ root_tmp }} {{ TARGET_DOMAIN }}
+
+- name: grep -r 'ServerName {{ TARGET_FQDN }}' {{ root_etc_httpd_confd }}
+  shell: "grep -r 'ServerName {{ TARGET_FQDN }}' {{ root_etc_httpd_confd }}"
+  register: servername_exists
+  ignore_errors: True
+
+- name: Now date
+  shell: date "+%Y%m%d"
+  register: today
+- name: backup ssl.conf
+  shell: cp -p '{{ root_etc_httpd_confd }}/ssl.conf' '{{ root_etc_httpd_confd }}/ssl.conf.{{ today.stdout }}'
+  ignore_errors: True
+
+- name: backup '{{ root_etc_httpd_confd }}/ssl.{{ TARGET_DOMAIN }}.conf'
+  shell: cp -p '{{ root_etc_httpd_confd }}/ssl.{{ TARGET_DOMAIN }}.conf' '{{ root_etc_httpd_confd }}/ssl.{{ TARGET_DOMAIN }}.conf.{{ today.stdout }}'
+  ignore_errors: True
+
+- name: copy template ssl.conf
+  copy:
+    src: httpd/conf.d/add_ssl_front_domain.conf
+    dest: '{{ root_tmp }}/'
+    mode: 0644
+  when: 
+    - servername_exists is failed
+    - TARGET_FQDN is match("^(stg\.|)scaru")
+
+- name: copy template ssl.conf
+  copy:
+    src: httpd/conf.d/add_ssl_api_domain.conf
+    dest: '{{ root_tmp }}/'
+    mode: 0644
+  when: 
+    - servername_exists is failed
+    - TARGET_FQDN is match("^(stgapi\.|api\.)scaru")
+
+- name: copy template ssl.conf
+  copy:
+    src: httpd/conf.d/add_ssl_bk_domain.conf
+    dest: '{{ root_tmp }}/'
+    mode: 0644
+  when: 
+    - servername_exists is failed
+    - TARGET_FQDN is match("^(stgbk\.|bk\.)scaru")
+
+- name: add {{ TARGET_FQDN }} to ssl.{{ TARGET_DOMAIN }}.conf
+  shell: cat '{{ root_tmp }}/add_ssl_front_domain.conf' >> '{{ root_etc_httpd_confd }}/ssl.{{ TARGET_DOMAIN }}.conf'
+  when: 
+    - servername_exists is failed
+    - TARGET_FQDN is match("^(stg\.|)scaru")
+
+- name: add {{ TARGET_FQDN }} to ssl.{{ TARGET_DOMAIN }}.conf
+  shell: cat '{{ root_tmp }}/add_ssl_bk_domain.conf' >> '{{ root_etc_httpd_confd }}/ssl.{{ TARGET_DOMAIN }}.conf'
+  when: 
+    - servername_exists is failed
+    - TARGET_FQDN is match("^(stgbk\.|bk\.)scaru")
+
+- name: add {{ TARGET_FQDN }} to ssl.{{ TARGET_DOMAIN }}.conf
+  shell: cat '{{ root_tmp }}/add_ssl_api_domain.conf' >> '{{ root_etc_httpd_confd }}/ssl.{{ TARGET_DOMAIN }}.conf'
+  when: 
+    - servername_exists is failed
+    - TARGET_FQDN is match("^(stgapi\.|api\.)scaru")
+
+- name: replace ServerName ssl.{{ TARGET_DOMAIN }}.conf 
+  replace:
+    path: '{{ root_etc_httpd_confd }}/ssl.{{ TARGET_DOMAIN }}.conf'
+    regexp: 'FQDN'
+    replace: '{{ TARGET_FQDN }}'
+
+- name: replace DocumentRoot ssl.{{ TARGET_DOMAIN }}.conf 
+  replace:
+    path: '{{ root_etc_httpd_confd }}/ssl.{{ TARGET_DOMAIN }}.conf'
+    regexp: 'DOCUMENT_ROOT'
+    replace: '{{ DOCUMENT_FRONT_ROOT }}'
+  when: 
+    - TARGET_FQDN is match("^(stg\.|)scaru")
+
+- name: replace DocumentRoot ssl.{{ TARGET_DOMAIN }}.conf 
+  replace:
+    path: '{{ root_etc_httpd_confd }}/ssl.{{ TARGET_DOMAIN }}.conf'
+    regexp: 'DOCUMENT_ROOT'
+    replace: '{{ DOCUMENT_BK_ROOT }}'
+  when: 
+    - TARGET_FQDN is match("^(stgbk\.|bk\.)scaru")
+
+- name: replace DocumentRoot ssl.{{ TARGET_DOMAIN }}.conf 
+  replace:
+    path: '{{ root_etc_httpd_confd }}/ssl.{{ TARGET_DOMAIN }}.conf'
+    regexp: 'DOCUMENT_ROOT'
+    replace: '{{ DOCUMENT_API_ROOT }}'
+  when: 
+    - TARGET_FQDN is match("^(stgapi\.|api\.)scaru")
+

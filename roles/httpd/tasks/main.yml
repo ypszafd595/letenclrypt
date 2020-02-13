@@ -1,0 +1,4 @@
+---
+- include: letencript.yml
+- include: ssl_conf.yml
+- debug: msg='Run Command -> sudo /usr/local/bin/certbot-auto certonly --apache'

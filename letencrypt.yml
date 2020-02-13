@@ -1,0 +1,7 @@
+---
+- hosts: httpd
+  become: yes
+#  sudo_user: root
+  roles:
+    - httpd
+

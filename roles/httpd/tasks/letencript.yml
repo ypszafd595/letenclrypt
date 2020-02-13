@@ -1,0 +1,11 @@
+---
+- stat:
+    path: '{{ root_usr_local_bin }}/certbot-auto'
+  register: certbot_auto
+- name: download certbot-auto
+  get_url:
+    url: '{{ download_url }}'
+    dest: '{{ root_usr_local_bin }}/certbot-auto'
+  when: not certbot_auto.stat.exists
+- file: path='{{ root_usr_local_bin }}/certbot-auto' mode=0755
+  when: not certbot_auto.stat.exists
